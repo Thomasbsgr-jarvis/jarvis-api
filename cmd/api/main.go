@@ -50,7 +50,7 @@ func main() {
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.AuthMiddleware(cfg.JWTSecret))
+		r.Use(authHandler.AuthMiddleware)
 
 		r.Get("/me", authHandler.Me)
 		r.Route("/eggo", func(r chi.Router) {

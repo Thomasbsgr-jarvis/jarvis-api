@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -91,6 +93,46 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+// VerifyToken
+func (s *Service) VerifyToken(ctx context.Context, tokenStr string) (int64, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(s.jwtSecret), nil
+	}, jwt.WithExpirationRequired())
+
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) ||
+			errors.Is(err, jwt.ErrSignatureInvalid) ||
+			strings.Contains(err.Error(), "bad parts") {
+			return 0, ErrInvalidToken
+		}
+		return 0, fmt.Errorf("unexpected parsing error: %w", err)
+	}
+
+	if !token.Valid {
+		return 0, ErrInvalidToken
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, fmt.Errorf("token validation failed: unable to cast claims")
+	}
+
+	sub, err := claims.GetSubject()
+	if err != nil || sub == "" {
+		return 0, fmt.Errorf("token validation failed: subject (sub) claim missing")
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("token validation failed: subject is not a valid int64 (%s): %w", sub, err)
+	}
+
+	return userID, nil
 }
 
 // Me
