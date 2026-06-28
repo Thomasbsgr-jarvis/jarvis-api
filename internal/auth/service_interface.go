@@ -10,4 +10,5 @@ type ServiceInterface interface {
 	Refresh(ctx context.Context, token string) (*AuthResponse, error)
 	Logout(ctx context.Context, token string) error
 	Me(ctx context.Context, userId int64) (*User, error)
+	VerifyToken(ctx context.Context, tokenStr string) (int64, error)
 }
