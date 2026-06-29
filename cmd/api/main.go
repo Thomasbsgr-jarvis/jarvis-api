@@ -46,14 +46,15 @@ func main() {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
-		r.Post("/refresh", authHandler.Refresh)
 		r.Post("/logout", authHandler.Logout)
 	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(authHandler.AuthMiddleware)
 
+		r.Post("/refresh", authHandler.Refresh)
 		r.Get("/me", authHandler.Me)
+
 		r.Route("/eggo", func(r chi.Router) {
 			r.Post("/complaints", eggoHandler.Complaints)
 			r.Post("/files", eggoHandler.NewFile)

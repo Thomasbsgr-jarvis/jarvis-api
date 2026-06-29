@@ -96,6 +96,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 // Refresh
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		web.WriteJSON(w, http.StatusUnauthorized, map[string]string{"message": "Token invalide."})
+		return
+	}
+
 	var input struct {
 		Token string `json:"token" validate:"required"`
 	}
@@ -116,8 +122,12 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authResponse, err := h.service.Refresh(r.Context(), input.Token)
+	authResponse, err := h.service.Refresh(r.Context(), input.Token, userID)
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			web.WriteJSON(w, http.StatusUnauthorized, map[string]string{"message": "Utilisateur inexistant."})
+			return
+		}
 		if errors.Is(err, ErrRefreshTokenNotFound) {
 			web.WriteJSON(w, http.StatusUnauthorized, map[string]string{"message": "Token invalide."})
 			return

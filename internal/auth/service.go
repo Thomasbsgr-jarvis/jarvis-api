@@ -68,11 +68,15 @@ func (s *Service) Login(ctx context.Context, email, password string) (*AuthRespo
 }
 
 // Refresh
-func (s *Service) Refresh(ctx context.Context, token string) (*AuthResponse, error) {
+func (s *Service) Refresh(ctx context.Context, token string, userId int64) (*AuthResponse, error) {
 	hashedToken := hashToken(token)
 
-	user, err := s.repo.RotateRefreshToken(ctx, hashedToken)
+	user, err := s.repo.FindUserById(ctx, userId)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.DeleteRefreshToken(ctx, hashedToken); err != nil {
 		return nil, err
 	}
 
