@@ -71,28 +71,6 @@ func (r *Repository) DeleteRefreshToken(ctx context.Context, hashedToken string)
 	return nil
 }
 
-func (r *Repository) RotateRefreshToken(ctx context.Context, hashedToken string) (*User, error) {
-	var user User
-	err := r.db.QueryRowContext(ctx,
-		`WITH deleted AS (
-			DELETE FROM refresh_tokens
-			WHERE token = $1 AND expires_at > NOW()
-			RETURNING user_id
-		)
-		SELECT u.id, u.full_name, u.email, u.password_hash, u.created_at
-		FROM users u
-		JOIN deleted d ON u.id = d.user_id`,
-		hashedToken,
-	).Scan(&user.ID, &user.FullName, &user.Email, &user.PasswordHash, &user.CreatedAt)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrRefreshTokenNotFound
-		}
-		return nil, fmt.Errorf("DB: RotateRefreshToken: %w", err)
-	}
-	return &user, nil
-}
-
 func (r *Repository) CleanUpRefreshToken(ctx context.Context, userID int64) error {
 	_, err := r.db.ExecContext(ctx,
 		"DELETE FROM refresh_tokens WHERE user_id = $1 AND expires_at < NOW()",
