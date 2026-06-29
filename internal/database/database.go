@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Thomasbsgr/jarvis-api/internal/config"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func New(cfg *config.Config) (*sql.DB, error) {
-	db, err := sql.Open("pgx", cfg.DatabaseURL)
+func New(dbUrl string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", dbUrl)
 	if err != nil {
 		return nil, fmt.Errorf("DB opening error: %w", err)
 	}
