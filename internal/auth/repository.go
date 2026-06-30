@@ -18,6 +18,7 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
+// CreateUser
 func (r *Repository) CreateUser(ctx context.Context, fullName, email, hashedPassword string) (*User, error) {
 	var user User
 	err := r.db.QueryRowContext(ctx,
@@ -34,6 +35,23 @@ func (r *Repository) CreateUser(ctx context.Context, fullName, email, hashedPass
 	return &user, nil
 }
 
+// FindUserById
+func (r *Repository) FindUserById(ctx context.Context, userId int64) (*User, error) {
+	var user User
+	err := r.db.QueryRowContext(ctx,
+		"SELECT id, full_name, email, password_hash, created_at FROM users WHERE id = $1",
+		userId,
+	).Scan(&user.ID, &user.FullName, &user.Email, &user.PasswordHash, &user.CreatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("DB: FindUserById: %w", err)
+	}
+	return &user, nil
+}
+
+// FindUserByEmail
 func (r *Repository) FindUserByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
 	err := r.db.QueryRowContext(ctx,
@@ -49,6 +67,7 @@ func (r *Repository) FindUserByEmail(ctx context.Context, email string) (*User, 
 	return &user, nil
 }
 
+// CreateRefreshToken
 func (r *Repository) CreateRefreshToken(ctx context.Context, userID int64, hashedToken string, expiresAt time.Time) error {
 	_, err := r.db.ExecContext(ctx,
 		"INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)",
@@ -60,6 +79,7 @@ func (r *Repository) CreateRefreshToken(ctx context.Context, userID int64, hashe
 	return nil
 }
 
+// DeleteRefreshToken
 func (r *Repository) DeleteRefreshToken(ctx context.Context, hashedToken string) error {
 	_, err := r.db.ExecContext(ctx,
 		"DELETE FROM refresh_tokens WHERE token = $1",
@@ -71,6 +91,7 @@ func (r *Repository) DeleteRefreshToken(ctx context.Context, hashedToken string)
 	return nil
 }
 
+// CleanUpRefreshToken
 func (r *Repository) CleanUpRefreshToken(ctx context.Context, userID int64) error {
 	_, err := r.db.ExecContext(ctx,
 		"DELETE FROM refresh_tokens WHERE user_id = $1 AND expires_at < NOW()",
@@ -80,20 +101,4 @@ func (r *Repository) CleanUpRefreshToken(ctx context.Context, userID int64) erro
 		return fmt.Errorf("DB: CleanUpRefreshToken: %w", err)
 	}
 	return nil
-}
-
-// FindUserById
-func (r *Repository) FindUserById(ctx context.Context, userId int64) (*User, error) {
-	var user User
-	err := r.db.QueryRowContext(ctx,
-		"SELECT id, full_name, email, password_hash, created_at FROM users WHERE id = $1",
-		userId,
-	).Scan(&user.ID, &user.FullName, &user.Email, &user.PasswordHash, &user.CreatedAt)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrUserNotFound
-		}
-		return nil, fmt.Errorf("DB: FindUserById: %w", err)
-	}
-	return &user, nil
 }

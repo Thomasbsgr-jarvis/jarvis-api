@@ -13,16 +13,15 @@ import (
 	"github.com/Thomasbsgr/jarvis-api/internal/config"
 	"github.com/Thomasbsgr/jarvis-api/internal/database"
 	"github.com/Thomasbsgr/jarvis-api/internal/eggo"
-	"github.com/Thomasbsgr/jarvis-api/internal/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
 	cfg := config.Load()
-	logger.Setup(cfg.AppEnv)
+	config.Setup(cfg.AppEnv)
 
-	db, err := database.New(cfg)
+	db, err := database.New(cfg.DatabaseURL)
 	if err != nil {
 		slog.Error("Database connection failed", "err", err)
 		os.Exit(1)

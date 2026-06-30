@@ -33,7 +33,7 @@ func (r *Repository) CreateComplaint(ctx context.Context, userId int64, folderId
 				folderId,
 			).Scan(&existing.ID, &existing.UserId, &existing.FolderId)
 			if selectErr != nil {
-				return nil, ErrComplaintAlreadyExists
+				return nil, fmt.Errorf("DB: CreateComplaint: %w", err)
 			}
 			return &existing, ErrComplaintAlreadyExists
 		}
@@ -71,11 +71,11 @@ func (r *Repository) CreateFile(ctx context.Context, userId int64, complaintId, 
 }
 
 // GetComplaintByID
-func (r *Repository) GetComplaintByID(ctx context.Context, id string) (*Complaint, error) {
+func (r *Repository) GetComplaintByID(ctx context.Context, id string, userId int64) (*Complaint, error) {
 	var complaint Complaint
 	err := r.db.QueryRowContext(ctx,
-		"SELECT id::text, user_id, folder_id, created_at FROM eggo_complaints WHERE id = $1",
-		id,
+		"SELECT id::text, user_id, folder_id, created_at FROM eggo_complaints WHERE id = $1 AND user_id = $2",
+		id, userId,
 	).Scan(&complaint.ID, &complaint.UserId, &complaint.FolderId, &complaint.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -93,7 +93,7 @@ func (r *Repository) GetFilesByComplaintID(ctx context.Context, complaintId stri
 		complaintId, userId,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("DB: GetFilesByComplaintID: %w", err)
 	}
 	defer rows.Close()
 
@@ -101,12 +101,12 @@ func (r *Repository) GetFilesByComplaintID(ctx context.Context, complaintId stri
 	for rows.Next() {
 		var f File
 		if err := rows.Scan(&f.ID, &f.ComplaintId, &f.UserId, &f.Hash, &f.Name, &f.Url, &f.CreatedAt); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("DB: GetFilesByComplaintID: %w", err)
 		}
 		files = append(files, f)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("DB: GetFilesByComplaintID: %w", err)
 	}
 
 	return &files, nil
