@@ -83,6 +83,7 @@ func (h *Handler) NewFile(w http.ResponseWriter, r *http.Request) {
 		web.WriteJSON(w, http.StatusBadRequest, map[string]string{"message": "Une erreur est survenue."})
 		return
 	}
+
 	if err := config.ValidateData(input); err != nil {
 		if errors.Is(err, config.ErrFields) {
 			web.WriteJSON(w, http.StatusUnprocessableEntity, errors.Unwrap(err).Error())
@@ -92,6 +93,7 @@ func (h *Handler) NewFile(w http.ResponseWriter, r *http.Request) {
 		web.WriteJSON(w, http.StatusInternalServerError, map[string]string{"message": "Une erreur est survenue."})
 		return
 	}
+
 	if err := h.service.NewFile(r.Context(), userID, input.ComplaintId, input.Hash, input.Name, input.Url); err != nil {
 		slog.Error("NewFile: unexpected error", "err", err)
 		web.WriteJSON(w, http.StatusInternalServerError, map[string]string{"message": "Une erreur est survenue."})
@@ -100,7 +102,7 @@ func (h *Handler) NewFile(w http.ResponseWriter, r *http.Request) {
 	web.WriteJSON(w, http.StatusCreated, map[string]string{"message": "Fichier créé avec succès."})
 }
 
-// GetComplaintById
+// GetComplaint
 func (h *Handler) GetComplaint(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	userID, ok := auth.UserIDFromContext(r.Context())
@@ -108,7 +110,7 @@ func (h *Handler) GetComplaint(w http.ResponseWriter, r *http.Request) {
 		web.WriteJSON(w, http.StatusUnauthorized, map[string]string{"message": "Token invalide."})
 		return
 	}
-	complaint, err := h.service.GetComplaint(r.Context(), id)
+	complaint, err := h.service.GetComplaint(r.Context(), id, userID)
 	if err != nil {
 		if errors.Is(err, ErrComplaintNotFound) {
 			web.WriteJSON(w, http.StatusNotFound, map[string]string{"message": "Plainte introuvable."})
@@ -119,10 +121,6 @@ func (h *Handler) GetComplaint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if userID != complaint.UserId {
-		web.WriteJSON(w, http.StatusUnauthorized, map[string]string{"message": "Vous n'êtes pas autorisé à accéder à cette conversation."})
-		return
-	}
 	web.WriteJSON(w, http.StatusOK, complaint)
 }
 

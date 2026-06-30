@@ -35,9 +35,9 @@ func (s *Service) NewFile(ctx context.Context, userId int64, complainId, hash, n
 	return s.repo.CreateFile(ctx, userId, complainId, hash, name, url)
 }
 
-// GetComplaintByID
-func (s *Service) GetComplaint(ctx context.Context, id string) (*Complaint, error) {
-	complaint, err := s.repo.GetComplaintByID(ctx, id)
+// GetComplaint
+func (s *Service) GetComplaint(ctx context.Context, id string, userId int64) (*Complaint, error) {
+	complaint, err := s.repo.GetComplaintByID(ctx, id, userId)
 	if err != nil {
 		return nil, err
 	}
